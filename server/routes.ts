@@ -3,6 +3,9 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertClientSchema, insertBookingSchema, updateBookingSchema } from "@shared/schema";
 import { z } from "zod";
+import session from "express-session";
+import bcrypt from "bcrypt";
+import MemoryStore from "memorystore";
 
 const bookingFormSchema = z.object({
   fullName: z.string().min(1, "Full name is required"),
@@ -13,7 +16,95 @@ const bookingFormSchema = z.object({
   additionalInfo: z.string().optional(),
 });
 
+// Extend session type
+declare module 'express-session' {
+  interface SessionData {
+    isAdmin: boolean;
+    userId: number;
+  }
+}
+
+// Middleware for checking admin authentication
+const requireAuth = (req: any, res: any, next: any) => {
+  if (req.session?.isAdmin) {
+    next();
+  } else {
+    res.status(401).json({ message: "Unauthorized" });
+  }
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Session configuration
+  const MemoryStoreConstructor = MemoryStore(session);
+  app.use(session({
+    secret: process.env.SESSION_SECRET || "your-secret-key-here",
+    resave: false,
+    saveUninitialized: false,
+    store: new MemoryStoreConstructor({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    }),
+    cookie: {
+      secure: false, // Set to true in production with HTTPS
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  }));
+
+  // Create default admin user if it doesn't exist
+  const initializeAdmin = async () => {
+    try {
+      const existingAdmin = await storage.getUserByUsername("admin");
+      if (!existingAdmin) {
+        const hashedPassword = await bcrypt.hash("admin", 10);
+        await storage.createUser({
+          username: "admin",
+          password: hashedPassword,
+        });
+        console.log("Default admin user created (username: admin, password: admin)");
+      }
+    } catch (error) {
+      console.error("Error initializing admin user:", error);
+    }
+  };
+  
+  await initializeAdmin();
+
+  // Authentication routes
+  app.post("/api/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      req.session.isAdmin = true;
+      req.session.userId = user.id;
+      res.json({ message: "Login successful", user: { id: user.id, username: user.username } });
+    } catch (error) {
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  app.post("/api/logout", (req, res) => {
+    req.session.destroy(() => {
+      res.json({ message: "Logout successful" });
+    });
+  });
+
+  app.get("/api/auth/check", (req, res) => {
+    if (req.session?.isAdmin) {
+      res.json({ isAuthenticated: true, userId: req.session.userId });
+    } else {
+      res.json({ isAuthenticated: false });
+    }
+  });
   // Create a new booking
   app.post("/api/bookings", async (req, res) => {
     try {
@@ -47,8 +138,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all bookings
-  app.get("/api/bookings", async (req, res) => {
+  // Get all bookings (admin only)
+  app.get("/api/bookings", requireAuth, async (req, res) => {
     try {
       const bookings = await storage.getAllBookings();
       res.json(bookings);
@@ -71,8 +162,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update booking status
-  app.patch("/api/bookings/:id", async (req, res) => {
+  // Update booking status (admin only)
+  app.patch("/api/bookings/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = updateBookingSchema.parse(req.body);
@@ -92,8 +183,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete booking
-  app.delete("/api/bookings/:id", async (req, res) => {
+  // Delete booking (admin only)
+  app.delete("/api/bookings/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteBooking(id);
@@ -106,8 +197,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all clients
-  app.get("/api/clients", async (req, res) => {
+  // Get all clients (admin only)
+  app.get("/api/clients", requireAuth, async (req, res) => {
     try {
       const clients = await storage.getAllClients();
       res.json(clients);
@@ -116,8 +207,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get analytics
-  app.get("/api/analytics", async (req, res) => {
+  // Get analytics (admin only)
+  app.get("/api/analytics", requireAuth, async (req, res) => {
     try {
       const analytics = await storage.getBookingAnalytics();
       res.json(analytics);

@@ -1,8 +1,8 @@
-# Professional Services Booking System
+# IT Service Booking System
 
 ## Overview
 
-This is a full-stack web application for managing professional service bookings. It provides a modern, responsive interface for clients to book services and an admin dashboard for managing bookings and clients. The system is built with React, Express.js, and uses PostgreSQL for data persistence.
+A complete IT consultancy booking system with modern UI and admin dashboard. The system provides a professional booking form for clients and a comprehensive admin panel for managing bookings, clients, and analytics. Built with React, Express.js, PostgreSQL, and includes secure admin authentication.
 
 ## System Architecture
 
@@ -12,76 +12,123 @@ This is a full-stack web application for managing professional service bookings.
 - **State Management**: TanStack Query for server state management
 - **Routing**: Wouter for client-side routing
 - **Form Handling**: React Hook Form with Zod validation
+- **Authentication**: Session-based admin authentication
 - **UI Components**: Radix UI primitives with custom styling
 
 ### Backend Architecture
 - **Framework**: Express.js with TypeScript
 - **Database**: PostgreSQL with Drizzle ORM
+- **Authentication**: bcrypt password hashing + express-session
 - **Validation**: Zod for request validation
-- **Session Management**: Built-in session handling
-- **API Design**: RESTful endpoints with JSON responses
+- **Session Management**: Memory store with proper security configuration
+- **API Design**: RESTful endpoints with authentication middleware
 
 ## Key Components
 
 ### Frontend Components
-- **BookingForm**: Main booking interface with service selection and form validation
-- **AdminDashboard**: Management interface for viewing and updating bookings
-- **UI Components**: Comprehensive set of reusable components based on shadcn/ui
+- **BookingForm**: Collapsible service selection with modern styling
+- **LoginForm**: Secure admin authentication interface
+- **AdminDashboard**: Analytics cards, booking management, client CRM
+- **Sidebar Layout**: Professional admin interface with responsive design
+- **Authentication**: useAuth hook for session management
 
 ### Backend Components
+- **Authentication System**: Login/logout endpoints with session management
 - **Database Layer**: Drizzle ORM with PostgreSQL adapter
-- **Storage Service**: Abstracted data access layer with interface-based design
-- **Route Handlers**: Express routes for booking and client management
-- **Validation**: Zod schemas for data validation
+- **Storage Service**: Full CRUD operations for bookings and clients
+- **Route Protection**: Middleware for admin-only endpoints
+- **Validation**: Comprehensive Zod schemas for all data
 
 ### Database Schema
-- **Users**: Admin user accounts with username/password authentication
-- **Clients**: Customer information including contact details
-- **Bookings**: Service booking records with status tracking and client relationships
+- **Users**: Admin accounts with bcrypt hashed passwords
+- **Clients**: Customer information with contact details and registration tracking
+- **Bookings**: Service records with status tracking, auto-generated IDs, and client relationships
+
+## Security Features
+
+- **Password Hashing**: bcrypt with salt rounds
+- **Session Security**: HTTP-only cookies, proper expiration
+- **Route Protection**: Authentication middleware for admin endpoints
+- **Input Validation**: Zod validation on all user inputs
+- **SQL Injection Prevention**: Drizzle ORM parameterized queries
+
+## Services Offered
+
+1. **IT Consultancy**: Strategic guidance and expert advice
+2. **Networking**: Professional network setup and optimization
+3. **Computer Maintenance**: Hardware and software maintenance solutions
+4. **Cybersecurity**: Security assessment and protection services
 
 ## Data Flow
 
-1. **Booking Creation**: Client submits booking form → validation → client creation/lookup → booking creation → confirmation
-2. **Admin Management**: Admin views dashboard → fetches bookings/analytics → updates booking status → real-time updates
-3. **Data Persistence**: All operations use Drizzle ORM → PostgreSQL database with relationship constraints
+1. **Public Booking**: Client submits form → service selection → client creation/lookup → booking creation → confirmation with tracking ID
+2. **Admin Authentication**: Login form → credential validation → session creation → dashboard access
+3. **Admin Management**: Dashboard analytics → booking status updates → client management → real-time updates
+4. **Session Management**: Authentication checks → protected route access → secure logout
 
 ## External Dependencies
 
 ### Database
-- **Neon Database**: Serverless PostgreSQL provider
-- **Connection**: WebSocket-based connection pooling for serverless environments
+- **PostgreSQL**: Primary database with Neon serverless hosting
+- **Drizzle ORM**: Type-safe database operations
+- **Connection Pooling**: WebSocket-based for serverless environments
+
+### Authentication
+- **bcrypt**: Password hashing and validation
+- **express-session**: Session management with memory store
+- **Session Security**: HTTP-only cookies with proper configuration
 
 ### UI Framework
 - **Radix UI**: Accessible component primitives
 - **Tailwind CSS**: Utility-first CSS framework
-- **Lucide Icons**: Icon library for consistent iconography
-
-### Development Tools
-- **Vite**: Build tool and development server
-- **ESBuild**: Production bundling
-- **TypeScript**: Type safety across the application
+- **Lucide Icons**: Consistent iconography
+- **shadcn/ui**: Pre-built component library
 
 ## Deployment Strategy
 
 ### Development
-- Vite development server for frontend hot reloading
-- Express server with TypeScript compilation via tsx
-- Database migrations through Drizzle Kit
+- Vite HMR for frontend development
+- Express server with TypeScript via tsx
+- Database schema push with Drizzle Kit
+- Default admin user auto-creation
 
 ### Production
-- Vite build process generates optimized static assets
-- ESBuild bundles server code for Node.js deployment
-- Environment-based configuration for database connections
+- Vite build optimization
+- ESBuild server bundling
+- Environment-based database configuration
+- Session security with HTTPS
 
 ### Database Management
-- Drizzle migrations stored in `/migrations` directory
-- Schema definitions in shared directory for type safety
-- Push-based deployment with `db:push` command
+- Push-based schema deployment
+- Type-safe migrations with Drizzle
+- Automatic relationship management
 
-## Changelog
+## Default Credentials
 
-- July 08, 2025. Initial setup
+- **Username**: admin
+- **Password**: admin
+
+*These should be changed in production environments*
+
+## Recent Changes
+
+- **July 08, 2025**: Initial system setup with booking form and basic admin panel
+- **July 08, 2025**: Added secure admin authentication with bcrypt password hashing
+- **July 08, 2025**: Implemented sidebar layout for admin dashboard with responsive design
+- **July 08, 2025**: Protected all admin endpoints with authentication middleware
+- **July 08, 2025**: Created comprehensive README and prepared for GitHub repository
+
+## Future Enhancements
+
+- Employee assignment system for internal booking management
+- Email notifications for booking confirmations
+- Advanced analytics and reporting features
+- Multi-role user management system
+- Calendar integration for appointment scheduling
 
 ## User Preferences
 
-Preferred communication style: Simple, everyday language.
+- **Communication Style**: Simple, everyday language
+- **Design Preference**: Modern, professional styling with good color scheme
+- **Functionality Focus**: Embeddable booking widget suitable for existing websites
+- **Admin Features**: CRM-like client management with booking analytics
