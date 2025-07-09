@@ -53,7 +53,7 @@ A modern, professional booking system for IT consultancy services built with Rea
 
 3. **Set up environment variables**
    ```bash
-   # Database configuration will be provided by Replit
+   # Database configuration 
    DATABASE_URL=your_database_url
    SESSION_SECRET=your_session_secret
    ```
