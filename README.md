@@ -52,18 +52,22 @@ A modern, professional booking system for IT consultancy services built with Rea
    ```
 
 3. **Set up environment variables**
+
+4.** Download Postgresql** https://get.enterprisedb.com/postgresql/postgresql-17.5-2-windows-x64.exe
    ```bash
+psql -c "CREATE DATABASE it_booking_system;"
+
    # Database configuration 
    DATABASE_URL=your_database_url
    SESSION_SECRET=your_session_secret
    ```
 
-4. **Push database schema**
+5. **Push database schema**
    ```bash
    npm run db:push
    ```
 
-5. **Start the application**
+6. **Start the application**
    ```bash
    npm run dev
    ```
