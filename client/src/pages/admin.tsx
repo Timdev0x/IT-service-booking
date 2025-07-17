@@ -1,4 +1,6 @@
 import { useState } from "react";
+import React from "react";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
@@ -143,3 +145,4 @@ export default function Admin() {
     </div>
   );
 }
+console.log("🔧 Admin route mounted");
