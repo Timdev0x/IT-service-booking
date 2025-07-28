@@ -1,20 +1,30 @@
+// server/scripts/seedAdmin.ts
+import mongoose from "mongoose";
+import dotenv from "dotenv";
 import bcrypt from "bcrypt";
-import { storage } from "../storage";
+import { User } from "../models/User";
+
+dotenv.config();
 
 async function seedAdmin() {
-  const existing = await storage.getUserByUsername("admin");
-  if (existing) {
+  await mongoose.connect(process.env.DATABASE_URL as string);
+  console.log("🛢️ Connected to MongoDB");
+
+  const existingAdmin = await User.findOne({ username: "admin" });
+  if (existingAdmin) {
     console.log("✅ Admin already exists.");
+    await mongoose.disconnect();
     return;
   }
 
   const hashedPassword = await bcrypt.hash("admin", 10);
-  await storage.createUser({
+  await User.create({
     username: "admin",
     password: hashedPassword,
+    role: "admin",
   });
 
   console.log("🧪 Seeded admin: username=admin, password=admin");
+  await mongoose.disconnect();
 }
-
-seedAdmin().catch(console.error);
+seedAdmin();

@@ -2,11 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import bcrypt from "bcrypt";
-import MemoryStore from "memorystore";
+import MongoStore from "connect-mongo"; // ✅ Mongo-backed sessions
 import { z } from "zod";
 import bookRoutes from "./routes/booking";
-app.use("/api", bookRoutes);
-
 import { storage } from "./storage";
 import { sendBookingEmail } from "./lib/mailer";
 import {
@@ -15,7 +13,7 @@ import {
   updateBookingSchema
 } from "@shared/schema";
 
-// Extend session type
+// 🧩 Extend session typing
 declare module "express-session" {
   interface SessionData {
     isAdmin: boolean;
@@ -29,7 +27,7 @@ const bookingFormSchema = z.object({
   phone: z.string().min(1, "Phone number is required"),
   preferredDate: z.string().min(1, "Preferred date is required"),
   service: z.string().min(1, "Service selection is required"),
-  additionalInfo: z.string().optional(),
+  additionalInfo: z.string().optional()
 });
 
 const requireAuth = (req: any, res: any, next: any) => {
@@ -38,31 +36,40 @@ const requireAuth = (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Session config
-  const MemoryStoreConstructor = MemoryStore(session);
+  const mongoURI = process.env.DATABASE_URL;
+  if (!mongoURI) {
+    throw new Error("❌ DATABASE_URL must be defined in .env");
+  }
+
+  // 🛠️ Session middleware using MongoStore
   app.use(
     session({
       secret: process.env.SESSION_SECRET || "your-secret-key-here",
       resave: false,
       saveUninitialized: false,
-      store: new MemoryStoreConstructor({
-        checkPeriod: 86400000
+      store: MongoStore.create({
+        mongoUrl: mongoURI,
+        ttl: 86400 // 1 day
       }),
       cookie: {
         secure: false,
         httpOnly: true,
-        maxAge: 24 * 60 * 60 * 1000
+        maxAge: 86400000
       }
     })
   );
 
-  // Ensure admin user exists
+  app.use("/api", bookRoutes);
+
   const initializeAdmin = async () => {
     try {
       const existingAdmin = await storage.getUserByUsername("admin");
       if (!existingAdmin) {
         const hashedPassword = await bcrypt.hash("admin", 10);
-        await storage.createUser({ username: "admin", password: hashedPassword });
+        await storage.createUser({
+          username: "admin",
+          password: hashedPassword
+        });
         console.log("✅ Default admin created: admin/admin");
       }
     } catch (error) {
@@ -72,7 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   await initializeAdmin();
 
-  // Auth routes
+  // 👤 Auth endpoints
   app.post("/api/login", async (req, res) => {
     try {
       const { username, password } = req.body;
@@ -102,7 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Booking creation
+  // 📝 Booking creation
   app.post("/api/bookings", async (req, res) => {
     try {
       const validatedData = bookingFormSchema.parse(req.body);
@@ -143,7 +150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin routes
+  // 🔧 Booking CRUD and analytics
   app.get("/api/bookings", requireAuth, async (_req, res) => {
     try {
       const bookings = await storage.getAllBookings();
@@ -211,6 +218,5 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const httpServer = createServer(app);
-  return httpServer;
+  return createServer(app);
 }

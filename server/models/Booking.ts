@@ -3,13 +3,12 @@ import mongoose from "mongoose";
 const bookingSchema = new mongoose.Schema({
   fullName: { type: String, required: true },
   email: { type: String, required: true },
-  phone: { type: String },
-  preferredDate: { type: String },
+  phone: String,
+  preferredDate: String,
   service: { type: String, required: true },
-  additionalInfo: { type: String },
-}, {
-  timestamps: true,
-});
+  additionalInfo: String,
+  status: { type: String, enum: ["Pending", "Approved", "Rejected"], default: "Pending" },
+  assignedTo: { type: String, default: "" },
+}, { timestamps: true });
 
-const Booking = mongoose.model("Booking", bookingSchema);
-export default Booking;
+export const Booking = mongoose.model("Booking", bookingSchema);

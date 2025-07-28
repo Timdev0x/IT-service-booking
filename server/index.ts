@@ -1,77 +1,82 @@
 import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import session from "express-session";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-import cors from "cors";
-import path from "path";
-import { fileURLToPath } from "url";
-import { sendBookingEmail } from "./lib/mailer"; // ✅ Corrected path
+import MongoStore from "connect-mongo"; // ✅ Replaced memorystore for ESM compatibility
+import { registerRoutes } from "./registerRoutes";
 
-dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+dotenv.config(); // 🌱 Load environment variables
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const mongoURI = process.env.DATABASE_URL;
 
-app.use(cors());
+// 🚨 Validate MongoDB URI format
+if (!mongoURI || (!mongoURI.startsWith("mongodb://") && !mongoURI.startsWith("mongodb+srv://"))) {
+  console.error("❌ Invalid DATABASE_URL format. It must start with 'mongodb://' or 'mongodb+srv://'");
+  process.exit(1);
+}
+
+// ✅ Middleware setup
 app.use(express.json());
+app.use(cookieParser());
+app.use(cors({
+  origin: "http://localhost:3000",
+  credentials: true
+}));
 
-// ✅ MongoDB Connection
-mongoose
-  .connect(process.env.DATABASE_URL as string)
-  .then(() => console.log("🛢️ STEP 0: Connected to MongoDB Atlas"))
-  .catch((err) => console.error("❌ STEP 0: MongoDB Connection Error:", err));
-
-// ✅ Booking Schema
-const bookingSchema = new mongoose.Schema({
-  fullName: String,
-  email: String,
-  phone: String,
-  preferredDate: String,
-  service: String,
-  additionalInfo: String,
-});
-
-const Booking = mongoose.model("Booking", bookingSchema);
-
-// ✅ Booking Endpoint
-app.post("/api/bookings", async (req, res) => {
-  console.log("📩 STEP 1: Incoming request to /api/bookings");
-
-  try {
-    console.log("📦 STEP 2: Payload received:", req.body);
-
-    const newBooking = await Booking.create(req.body);
-    console.log("🗂️ STEP 3: Booking saved to MongoDB:", newBooking);
-
-    console.log("✉️ STEP 4: Triggering email via sendBookingEmail...");
-
-    await sendBookingEmail({
-      fullName: newBooking.fullName,
-      email: newBooking.email,
-      phone: newBooking.phone,
-      preferredDate: newBooking.preferredDate,
-      service: newBooking.service,
-      additionalInfo: newBooking.additionalInfo,
-      bookingId: newBooking._id.toString(),
-    });
-
-    console.log("✅ STEP 5: Email sent. Responding to client...");
-    res.status(200).json({ booking: { bookingId: newBooking._id } });
-  } catch (error: any) {
-    console.error("❌ STEP X: Error during booking flow:", error);
-    res.status(500).json({ message: "Booking failed", details: error.message });
+// 🔐 Session setup using MongoDB store (ESM-safe)
+app.use(session({
+  secret: process.env.SESSION_SECRET || "your-secret-key",
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: mongoURI,
+    ttl: 86400 // 1 day in seconds
+  }),
+  cookie: {
+    secure: false,
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 1 day in milliseconds
   }
+}));
+
+// 🔑 Auth endpoints
+app.post("/api/login", (req, res) => {
+  req.session.user = {
+    name: "Admin",
+    role: "admin",
+    isAdmin: true
+  };
+  res.json({ message: "Login successful", user: req.session.user });
 });
 
-// ✅ Serve React Frontend
-app.use(express.static(path.join(__dirname, "../dist")));
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../dist/index.html"));
+app.get("/api/auth/check", (req, res) => {
+  res.json({
+    isAuthenticated: !!req.session?.user?.isAdmin,
+    user: req.session?.user || null
+  });
 });
 
-// ✅ Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://127.0.0.1:${PORT}`);
+app.post("/api/logout", (req, res) => {
+  req.session.destroy(() => {
+    res.json({ message: "Logout successful" });
+  });
 });
+
+// 📦 Load all custom routes
+registerRoutes(app);
+
+// 🛠️ Connect to MongoDB and launch server
+mongoose.connect(mongoURI)
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running at http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB connection error:", err.message);
+    process.exit(1);
+  });
