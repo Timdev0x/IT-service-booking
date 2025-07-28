@@ -1,39 +1,43 @@
-// server/lib/mailer.ts
-import { Resend } from "resend";
+import sgMail from "@sendgrid/mail";
 import dotenv from "dotenv";
+
 dotenv.config();
+sgMail.setApiKey(process.env.SENDGRID_API_KEY!);
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-export async function sendBookingEmail(booking: {
+interface BookingDetails {
   fullName: string;
   email: string;
   phone: string;
   preferredDate: string;
   service: string;
-  additionalInfo?: string;
+  additionalInfo: string;
   bookingId: string;
-}) {
-  try {
-    await resend.emails.send({
-      from: "AIS Notifications <info@ais.co.ke>",
-      to: ["info@ais.co.ke"],
-      subject: `📥 Booking Received: ${booking.bookingId}`,
-      html: `
-        <h2>New Booking Received</h2>
-        <p><strong>Name:</strong> ${booking.fullName}</p>
-        <p><strong>Email:</strong> ${booking.email}</p>
-        <p><strong>Phone:</strong> ${booking.phone}</p>
-        <p><strong>Date:</strong> ${booking.preferredDate}</p>
-        <p><strong>Service:</strong> ${booking.service}</p>
-        <p><strong>Additional Info:</strong> ${booking.additionalInfo || "—"}</p>
-        <hr />
-        <p><strong>Booking ID:</strong> ${booking.bookingId}</p>
-      `,
-    });
+}
 
-    console.log("✅ Booking email sent to info@ais.co.ke");
-  } catch (error) {
-    console.error("❌ Failed to send email:", error);
+export async function sendBookingEmail(details: BookingDetails) {
+  console.log("📨 STEP A: Preparing email for booking:", details.bookingId);
+
+  const msg = {
+    to: process.env.ADMIN_EMAIL!,
+    from: process.env.ADMIN_EMAIL!,
+    subject: `🔔 New Booking from ${details.fullName} [${details.bookingId}]`,
+    html: `
+      <h2>New Booking Received</h2>
+      <p><strong>Name:</strong> ${details.fullName}</p>
+      <p><strong>Email:</strong> ${details.email}</p>
+      <p><strong>Phone:</strong> ${details.phone}</p>
+      <p><strong>Preferred Date:</strong> ${details.preferredDate}</p>
+      <p><strong>Service:</strong> ${details.service}</p>
+      <p><strong>Additional Info:</strong> ${details.additionalInfo || "None"}</p>
+    `,
+  };
+
+  try {
+    console.log("📤 STEP B: Sending email via SendGrid...");
+    await sgMail.send(msg);
+    console.log("✅ STEP C: Email sent successfully");
+  } catch (error: any) {
+    console.error("❌ STEP D: SendGrid error:", error.response?.body || error.message);
+    throw error;
   }
 }

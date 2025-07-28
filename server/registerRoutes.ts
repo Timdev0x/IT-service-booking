@@ -4,6 +4,8 @@ import session from "express-session";
 import bcrypt from "bcrypt";
 import MemoryStore from "memorystore";
 import { z } from "zod";
+import bookRoutes from "./routes/booking";
+app.use("/api", bookRoutes);
 
 import { storage } from "./storage";
 import { sendBookingEmail } from "./lib/mailer";
