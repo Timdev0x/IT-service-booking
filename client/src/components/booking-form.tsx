@@ -108,15 +108,16 @@ export default function BookingForm() {
 
           {/* Service */}
           <div>
-            <Label htmlFor="service">Service</Label>
-            <select {...form.register("service")} className="w-full border rounded-md p-2">
-              <option value="">Select a service</option>
-              <option value="Consultancy">Consultancy</option>
-              <option value="Networking">Networking</option>
-              <option value="Computer Maintenance">Computer Maintenance</option>
-              <option value="Cybersecurity">Cybersecurity</option>
-            </select>
-          </div>
+  <Label htmlFor="service">Service</Label>
+  <select {...form.register("service")} className="w-full border rounded-md p-2">
+    <option value="">Select a service</option>
+    <option value="Software Development">Software Development</option>
+    <option value="Ecommerce Store Design">Ecommerce Store Design</option>
+    <option value="IT Training">IT Training</option>
+    <option value="Networking and Maintenance">Networking and Maintenance</option>
+    <option value="IT Consultancy">IT Consultancy</option>
+  </select>
+</div>
 
           {/* Additional Info */}
           <div>
