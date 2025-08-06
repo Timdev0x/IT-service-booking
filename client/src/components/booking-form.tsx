@@ -146,6 +146,5 @@ export default function BookingForm() {
     </Card>
   );
 
-  <!-- Cronitor RUM -->
 
 }
