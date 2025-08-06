@@ -147,10 +147,5 @@ export default function BookingForm() {
   );
 
   <!-- Cronitor RUM -->
-<script async src="https://rum.cronitor.io/script.js"></script>
-<script>
-    window.cronitor = window.cronitor || function() { (window.cronitor.q = window.cronitor.q || []).push(arguments); };
-    cronitor('config', { clientKey: '4e40a61911aa6c3000d38281aff344f3' });
-</script>
 
 }
